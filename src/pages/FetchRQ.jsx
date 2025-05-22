@@ -1,11 +1,13 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import React, { useState } from 'react'
-import { fetchPosts } from '../api/Api'
+import { fetchPosts, deletePost, updatePost } from '../api/Api'
 import { NavLink } from 'react-router-dom'
 
 export const FetchRQ = () => {
 
   const [pageNumber, setPageNumber] = useState(0);
+
+  const queryClient = useQueryClient();
 
   const { data, error, isError, isPending } = useQuery({
     queryKey: ["posts", pageNumber], //useState
@@ -15,6 +17,30 @@ export const FetchRQ = () => {
     // staleTime: 5000,
     // refetchInterval: 1000,
     // refetchIntervalInBackground: true,
+  })
+
+  // Mutation function to delete the post
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deletePost(id),
+    onSuccess: (data, id) => {
+      queryClient.setQueryData(["posts", pageNumber], (currElm) => {
+        return currElm?.filter((post) => post?.id !== id)
+      })
+    }
+  })
+
+  // Mutation function to update the post
+  const updateMutation = useMutation({
+    mutationFn: (id) => updatePost(id),
+    onSuccess: (apiData, postId) => {
+      queryClient.setQueryData(["posts", pageNumber], (postsData) => {
+        return postsData.map((currPost) => {
+          return currPost.id === postId
+            ? {...currPost, title: apiData.data.title}
+            : currPost
+        })
+      })
+    }
   })
 
   if(isPending) return <p>Loading...</p>
@@ -33,6 +59,8 @@ export const FetchRQ = () => {
                   <p>{title}</p>
                   <p>{body}</p>
                 </NavLink>
+                <button onClick={() => deleteMutation.mutate(id)}>Delete</button>
+                <button onClick={() => updateMutation.mutate(id)}>Update</button>
               </li>
             )
           })

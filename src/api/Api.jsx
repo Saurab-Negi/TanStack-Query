@@ -22,3 +22,13 @@ export const fetchInvPosts = async (id) => {
     console.error(error)
   }
 }
+
+// to delete the post
+export const deletePost = (id) => {
+  return api.delete(`/posts/${id}`)
+}
+
+// to update the post
+export const updatePost = (id) => {
+  return api.patch(`/posts/${id}`, {title: "Update successfull"})
+}
